@@ -7,7 +7,6 @@ verify_ssl = true
 
 [packages]
 numpy = "*"
-itertools = "*"
 
 [requires]
 python_version = "3.8"
