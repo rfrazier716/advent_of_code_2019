@@ -42,6 +42,7 @@ class SingleAdjacencyGraph():
         return self._vertices
 
 def vertex_from_input(input_string):
+    # takes the input for the puzzle and returns a vertex object
     adjacent,name=input_string.strip().split(")")
     return Vertex(name,adjacent)
 
@@ -53,12 +54,8 @@ def puzzle_part_a(graph):
 def puzzle_part_b(graph):
     # figure out how far apart you are from santa
     # find the vertices traversed for you as a list and the vertices traversed from santa
-    _,path_you=graph.ascend_graph("YOU")
-    _,path_san=graph.ascend_graph("SAN")
-    path_you.reverse()
-    path_san.reverse()
-    #print(path_you)
-    #print(path_san)
+    _,path_you=graph.ascend_graph("YOU") # how far away you are from the common orbit
+    _,path_san=graph.ascend_graph("SAN") # how far away santa is from the common orbit
     steps_to_santa=len(set(path_you)^set(path_san))-2 #have to subtract 2 because your trying to move from your adjacent vertex to santas
     print("you are {} orbits away from santa".format(steps_to_santa))
 
