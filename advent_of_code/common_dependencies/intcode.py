@@ -6,7 +6,7 @@ class Opcode():
     def __init__(self, value, n_params, function, writes_to_memory, descriptor=""):
         self.value = value  # the integer value of the opcode
         self.n_params = n_params  # number of parameters the opcode requires
-        self.writes_to_memory = writes_to_memory # tracks if this opcode writes the result of the operation to memory
+        self.writes_to_memory = writes_to_memory  # tracks if this opcode writes the result of the operation to memory
         self.function = function  # function to execute when the opcode is called
         self.descriptor = descriptor  # human readable descriptor
 
@@ -16,23 +16,18 @@ class Opcode():
 
 class IntcodeComputer():
     def __init__(self, memory=np.array([]), verbose=False):
-        # buffers for input and output
-        self._input_buffer = []
-        self._output_buffer = []
 
         self._verbose = verbose  # Used for Debug, print computer flow to console
 
         self._parameter_array = np.full(3, 0, dtype=int)  # Array that holds parameters mode settings for arguments
-        self._pc = 0x00  # Program counter for traversing memory
         self._registers = np.full(3, 0)  # the three registers used for all operations
-        self._opcode = 0x00  # Opcode is the command given to the computer
 
-        self._running = True  # Current state of the computer,
-        self._memory = copy.deepcopy(memory)  # the "memory of the computer" a 1D array of integer values
+        self.__shadow_memory = copy.deepcopy(memory)  # the default state of memory used for reboots
+        self.reset()    #reset the computer
 
         # This is the list of current opcodes for the computer
         self._opcodes = {code.value: code for code in (
-            Opcode(1, 3, self._op_add, True,"Add"),
+            Opcode(1, 3, self._op_add, True, "Add"),
             Opcode(2, 3, self._op_multiply, True, "Multiply"),
             Opcode(3, 1, self._op_input, True, "Input"),
             Opcode(4, 1, self._op_output, False, "Output"),
@@ -46,25 +41,31 @@ class IntcodeComputer():
 
     def reset(self):
         # Reset the computer by setting the pc to 0x00 and setting _running to True
-        self._pc = 0x00
-        self._running = True
+        self._memory = copy.deepcopy(self.__shadow_memory) # restore the memory to a default state
+        self._input_buffer = []  # reset the input buffer
+        self._output_buffer=[]
+        self._pc = 0x00  # Program counter for traversing memory
+
+        self._running = True    # Boolean that states whether the code is running or blocked waiting for input
+        self._program_finished = False # Flag that gets set when opcode 99 is read
 
     def input(self, input):
         # pushes an input to the end of the input buffer
         self._input_buffer.append(input)
+
     def get_output(self):
         # pops one value from the output buffer and returns it
-        return(self._output_buffer.pop(0))
+        return self._output_buffer.pop(0)
 
     def flush_output(self):
         # pops items from the output buffer and prints them
-        tmp=self._output_buffer #assign the buffer to a temporary variable
-        self._output_buffer=[]  #clear the buffer
-        return tmp  #return the buffer
+        tmp = self._output_buffer  # assign the buffer to a temporary variable
+        self._output_buffer = []  # clear the buffer
+        return tmp  # return the buffer
 
     def load_memory(self, memory):
         # load a new array of memory into computer and reset
-        self._memory = copy.deepcopy(memory)
+        self.__shadow_memory = copy.deepcopy(memory)
         self.reset()
 
     def _reset_parameter_array(self):
@@ -95,9 +96,14 @@ class IntcodeComputer():
 
     def run(self):
         # Runs the computer until it it shutdown by an opcode and then returns the memory space
-        while self._running:
+        while self._running and not self._program_finished:
             self.cycle()
         return self._memory
+
+    def resume(self):
+        # resumes operation of the computer but does not reset the state, used if it hangs while waiting for user input
+        self._running=True
+        self.run()
 
     def _load_registers(self, n_params):
         # load registers based on the number of parameters the opcode needs and the parameter type
@@ -112,16 +118,17 @@ class IntcodeComputer():
                 raise ValueError("Expected a 0 or 1 but got {}".format(self._parameter_array[j]))
 
     def cycle(self):
-        if self._running:
+        if self._running and not self._program_finished:
             if self._verbose:
                 print("Pulling Instruction from memory address {}".format(self._pc))
             opcode = self._pull_instruction()  # pull an instruction and advance the program counter
             if opcode.writes_to_memory:
-                #If this isn't an output the final bit of the param register has to be 1 because that specifies which register is written to
-                #output can just output an immediate value
-                self._parameter_array[opcode.n_params-1]=1
+                # If this isn't an output the final bit of the param register has to be 1 because that specifies which register is written to
+                # output can just output an immediate value
+                self._parameter_array[opcode.n_params - 1] = 1
 
-            self._load_registers(opcode.n_params)  # fill the data registers by pulling from memory the required number of parameters
+            self._load_registers(
+                opcode.n_params)  # fill the data registers by pulling from memory the required number of parameters
             if self._verbose:
                 print("\t Opcode: {}:{}".format(opcode.value, opcode.descriptor) + ",Parameter modes: {}{}{}".format(
                     *self._parameter_array))
@@ -161,7 +168,11 @@ class IntcodeComputer():
 
     def _op_input(self):
         # pop a value from the input buffer in fifo format and write to the memory address in register[0]
-        self._memory[self._registers[0]] = self._input_buffer.pop(0)
+        try:
+            self._memory[self._registers[0]] = self._input_buffer.pop(0)
+        except IndexError:  #Index error occurs because we tried to pop from an empty list, need to suspend execution until we have input
+            self._pc-=2 #decrement the program counter twice so that when the system resumes it's at the input instruction
+            self._running=False
 
     def _op_output(self):
         # take value in register[0] and puts it on the output buffer
@@ -192,6 +203,5 @@ class IntcodeComputer():
         pass
 
     def _op_terminate(self):
-        self._running = False
+        self._program_finished = True
 
-#TODO: Need to figure out a better way to pass parameters
