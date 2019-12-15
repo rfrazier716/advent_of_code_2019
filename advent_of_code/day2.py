@@ -7,7 +7,7 @@ import common_dependencies.intcode as intcode
 def process_int_code(int_code):
     int_code[1]=12 #replace position 1 with value 1
     int_code[2]=2 #replace position 2 with value 2
-    computer=intcode.IntcodeComputer()
+    computer=intcode.IntcodeComputer(verbose=True)
     computer.load_memory(int_code)
     mem_result=computer.run()
     return mem_result[0]

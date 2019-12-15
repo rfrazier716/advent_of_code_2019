@@ -20,7 +20,7 @@ def number_contains_double_pair(number):
 
 def number_in_ascending_order(number):
     number_arr = np.array([int(d) for d in str(number)], dtype=int)
-    return all(number_arr == np.sort(number_arr))
+    return all([number_arr[j]<=number_arr[j+1] for j in range(len(number_arr)-1)])
 
 def solve_puzzle_set():
     number_range = [353096, 843212]
