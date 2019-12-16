@@ -80,8 +80,15 @@ def puzzle_part_b(bot):
         paint_history[bot.encoded_position] = new_color
         bot.turn(turn_direction)
         bot.move()
-    coords=np.array([decode_coordinate(coordinate) for coordinate in list(paint_history.keys())])
-    plt.scatter(coords[:,0],coords[:,1])
+    coords=[]
+    values=[]
+    for coordinate in list(paint_history.keys()):
+        coords.append(decode_coordinate(coordinate))
+        values.append(paint_history[coordinate])
+    white_tiles=(np.argwhere(np.array(values)>0).T)[0]
+    print(white_tiles)
+    white_coords=np.array([coords[white_tile] for white_tile in white_tiles])
+    plt.plot(white_coords[:,0],white_coords[:,1])
     plt.show()
 
 def main():
@@ -89,7 +96,7 @@ def main():
     input_path = Path("puzzle_inputs") / "day11_input.txt"
     program = np.loadtxt(input_path, delimiter=",", dtype=np.int64)
     bot.load_memory(program)
-    puzzle_part_a(bot)
+    #puzzle_part_a(bot)
     puzzle_part_b(bot)
 
 
