@@ -1,0 +1,21 @@
+# program that copies numbers into extended memory for the specified number of times
+# program input is number of repeats
+# 0 - holds the number of repeats
+# 1 - holds how many iterations have happened (is coded to zero in memory
+#
+# 3 - holds a big number
+# 4 - holds another big number
+3,0 # get user input and put it in memory location zero this is the number of repeats
+1101,0,1000,2       # put 1000 into memory offset register
+1101,0,11117236,3   # put num_a into memory address 3
+1101,0,8294830,4    # put num_b into memory address 4
+109,1000            # set the memory offset to be 1000 (deep memory offset)
+
+                    #loop starts at memory address 16
+109,1               #increment the memory offset
+20002,3,4,0         # multiply the two numbers and place it in the memory offset
+01001,1,1,1         # add one to the counter
+00007,1,0,5         # evaluate if the counter is less than the number of runs and put result in memory address 5
+01005,5,16          # if the counter is less than the requested number of runs, go to memory address 14
+
+99  #end program
