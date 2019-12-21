@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "bf08f3ae04d544310761ecf1ec00f35b96bb371b2ed61fc09d5356e1022bfdca"
+            "sha256": "ac681a563f96d0b4b6236f25812aaa1b25ee2d551ac0789706e0c5bac683e4bb"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -22,6 +22,12 @@
                 "sha256:cd7b2d1018258d7247a71425e9f26463dfb444d411c39569972f4ce586b0c9d8"
             ],
             "version": "==0.10.0"
+        },
+        "future": {
+            "hashes": [
+                "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"
+            ],
+            "version": "==0.18.2"
         },
         "kiwisolver": {
             "hashes": [
@@ -110,6 +116,14 @@
             ],
             "index": "pypi",
             "version": "==1.17.4"
+        },
+        "pyglet": {
+            "hashes": [
+                "sha256:9c7fd49296d8d61be972335f4e989922c90ea40f2d4b51642db29ee7a8adc65c",
+                "sha256:b333c6485a3248b4d914dbd95c32796dfccecd54c0a1b399f4ec9428ba6d5d73"
+            ],
+            "index": "pypi",
+            "version": "==1.4.8"
         },
         "pyparsing": {
             "hashes": [
