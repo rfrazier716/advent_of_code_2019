@@ -36,7 +36,7 @@ class PaintBot(intcode.IntcodeComputer):
         return self._direction
     @property
     def encoded_position(self):
-        return 1000*self._position[0]+self._position[1]
+        return "".join([str(position).zfill(3) for position in self._position])
 
 def puzzle_part_a(bot):
     paint_history = {}  # empty dictionary object that keeps track of the bots coordinates, the keys are 6 digits where the first 3 are x val and second 3 are y val
@@ -58,13 +58,14 @@ def puzzle_part_a(bot):
     print("{} tiles in total were painted".format(tiles_painted))
 
 def decode_coordinate(coordinate):
-    x=math.floor(coordinate/1000)
-    y=coordinate-1000*x
+    print(coordinate)
+    x=int(coordinate[0:3])
+    y=int(coordinate[3:])
     return x,y
 
 def puzzle_part_b(bot):
     bot.reset()
-    paint_history = {000000:1}  # empty dictionary object that keeps track of the bots coordinates, the keys are 6 digits where the first 3 are x val and second 3 are y val
+    paint_history = {"000000":1}  # empty dictionary object that keeps track of the bots coordinates, the keys are 6 digits where the first 3 are x val and second 3 are y val
     tiles_painted = 1
     while not bot.program_finished:  # while the programs not finished
         camera_input = 0
@@ -88,7 +89,7 @@ def puzzle_part_b(bot):
     white_tiles=(np.argwhere(np.array(values)>0).T)[0]
     print(white_tiles)
     white_coords=np.array([coords[white_tile] for white_tile in white_tiles])
-    plt.plot(white_coords[:,0],white_coords[:,1])
+    plt.scatter(white_coords[:,0],white_coords[:,1])
     plt.show()
 
 def main():
@@ -96,7 +97,7 @@ def main():
     input_path = Path("puzzle_inputs") / "day11_input.txt"
     program = np.loadtxt(input_path, delimiter=",", dtype=np.int64)
     bot.load_memory(program)
-    #puzzle_part_a(bot)
+    puzzle_part_a(bot)
     puzzle_part_b(bot)
 
 
