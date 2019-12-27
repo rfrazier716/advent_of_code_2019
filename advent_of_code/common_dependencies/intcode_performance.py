@@ -18,7 +18,7 @@ n_runs=1000
 computer = intcode.IntcodeComputer(verbose=False)
 input_path=Path("speed_test.txt")
 int_code=load_commented_program(input_path)
-computer.load_memory(int_code)
+computer.load_software(int_code)
 '''
 
 evaluation_code_reset='''

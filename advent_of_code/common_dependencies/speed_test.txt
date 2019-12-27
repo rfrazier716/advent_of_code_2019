@@ -5,6 +5,7 @@
 #
 # 3 - holds a big number
 # 4 - holds another big number
+
 3,0 # get user input and put it in memory location zero this is the number of repeats
 1101,0,1000,2       # put 1000 into memory offset register
 1101,0,11117236,3   # put num_a into memory address 3

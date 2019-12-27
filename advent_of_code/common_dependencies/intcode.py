@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+from collections import defaultdict
 
 
 class Opcode():
@@ -15,14 +16,14 @@ class Opcode():
 
 
 class IntcodeComputer():
-    def __init__(self, memory=np.array([]), verbose=False):
+    def __init__(self, software=[], verbose=False):
 
         self._verbose = verbose  # Used for Debug, print computer flow to console
 
         self._parameter_array = np.full(3, 0, dtype=int)  # Array that holds parameters mode settings for arguments
-        self._registers = np.full(3, 0,dtype=np.int64)  # the three registers used for all operations
+        self._registers = np.full(3, 0,dtype=np.int64)  # the three registers used for all operations, these registers hold memory locations that the operators act on
 
-        self.__shadow_memory = copy.deepcopy(memory)  # the default state of memory used for reboots
+        self._software=software  # this is the software that has to be loaded into memory
         self.reset()  # reset the computer
 
         # This is the list of current opcodes for the computer
@@ -49,11 +50,13 @@ class IntcodeComputer():
 
     def reset(self):
         # Reset the computer by setting the pc to 0x00 and setting _running to True
-        self._extended_memory = {}  # Extended memory is a dictionary
+        self._memory=defaultdict(np.int64)   #memory is a dictionary with default value of 0 for nonexistant keys
         self._relative_offset = 0  # relative offset for referencing memory locations
-        self._memory = copy.deepcopy(self.__shadow_memory).astype(np.int64)  # restore the memory to a default state
+        for index,value in enumerate(self._software):
+            # restore the memory to a default state
+            self._memory[index]=np.int64(value)
         self._input_buffer = []  # reset the input buffer
-        self._output_buffer = []
+        self._output_buffer = [] # reset the output buffer
         self._pc = 0x00  # Program counter for traversing memory
 
         self._running = True  # Boolean that states whether the code is running or blocked waiting for input
@@ -73,10 +76,14 @@ class IntcodeComputer():
         self._output_buffer = []  # clear the buffer
         return tmp  # return the buffer
 
-    def load_memory(self, memory):
+    def load_software(self, software):
         # load a new array of memory into computer and reset
-        self.__shadow_memory = copy.deepcopy(memory)
+        self._software=software
         self.reset()
+
+    def load_memory(self,software):
+        print("This function has been replaced by \"load_software()\"")
+        self.load_software(software)
 
     def _pull_instruction(self):
         # takes in a parameterized opcode from memory, returns the opcode and updates the parameter array
@@ -122,46 +129,25 @@ class IntcodeComputer():
             # If there's an index error pull the value from extended memory
             return self._extended_memory.get(memory_address, 0)
 
-    def _write_to_memory(self, memory_address, value):
-        try:
-            self._memory[memory_address] = value
-        except IndexError:
-            # If there's an index error write the value to extended memory
-            self._extended_memory[memory_address] = value
-
     def _load_registers(self, opcode):
-        # load registers based on the number of parameters the opcode needs and the parameter type
-            # if the opmode doesn't write to memory pull it as normal, if it does write to memory you have to treat
-            # that last instruction special so the address to write to get passed instead of the value in that address
-        for j in range(opcode.n_params):
-            #have to have special cases to make sure the register address is passed instead of register value for operations that write to memory
-            if opcode.writes_to_memory and j==opcode.n_params-1:
-                if self._parameter_array[j]==0 or self._parameter_array[j]==1: self._registers[j]=self._parameter_mode[1]()  #pass the value from memory which is what register to write to
-                elif self._parameter_array[j]==2: self._registers[j]=self._parameter_mode[1]()+self._relative_offset #pass the value from memory plus offset
-            else:
-                # check which parameter mode is needed and call the appropriate function
-                self._registers[j]=self._parameter_mode[self._parameter_array[j]]()
-
-
+        #load registers with the addresses where they can find the values required for operations
+        self._registers=[self._parameter_mode[parameter]() for parameter in self._parameter_array[0:opcode.n_params]]
 
     def cycle(self):
         if self._running and not self._program_finished:
             if self._verbose:
+                print("relative offset {}".format(self._relative_offset))
                 print("Pulling Instruction from memory address {}".format(self._pc))
             opcode = self._pull_instruction()  # pull an instruction and advance the program counter
-            if opcode.writes_to_memory and self._parameter_array[opcode.n_params - 1] == 0 :
-                # If this isn't an output the final bit of the param register has to be 1 because that specifies which register is written to
-                # output can just output an immediate value
-                self._parameter_array[opcode.n_params - 1] = 1
 
             # fill the data registers by pulling from memory the required number of parameters
             self._load_registers(opcode)
             if self._verbose:
-                print("\t Opcode: {}:{}".format(opcode.value, opcode.descriptor) + ",Parameter modes: {}{}{}".format(
+                print("\t Opcode: {}:{}".format(opcode.value, opcode.descriptor) + ", Parameter modes: {}{}{}".format(
                     *self._parameter_array))
                 i = 0
                 for reg in self._registers:
-                    print("\t Register {}:\t{}".format(i, reg))
+                    print("\t Register {}:\t{} ({})".format(i, reg,self._memory[reg]))
                     i += 1
             opcode.execute()  # execute the opcode
             # if self._verbose: print(self._memory)
@@ -188,62 +174,67 @@ class IntcodeComputer():
 
     # parameter mode functions defined below
     def _param_position(self):
-        return self._pull_from_memory(self._pc_pull())
-
-    def _param_immediate(self):
+        #the memory address pointed to by the PC holds a reference to which address holds teh data to operate on
         return self._pc_pull()
 
+    def _param_immediate(self):
+        #the memory address pointed to by the PC holds the data to operate on
+        index = self._pc #store the memory address the pc is pointing to
+        self._pc +=1    #increment the program counter
+        return index
+
     def _param_relative(self):
-        return self._pull_from_memory(self._pc_pull() + self._relative_offset)
+        #the memory address pointed to by the pc holds a reference to which address holds the data (shifted by offset)
+        return self._pc_pull() + self._relative_offset
 
     # Opcode functions defined below
 
     def _op_add(self):
         # add the values in register 0 and 1 and store in memory location pointed to by reg 2
-        self._write_to_memory(self._registers[2], self._registers[0] + self._registers[1])
+        self._memory[self._registers[2]]= self._memory[self._registers[0]] + self._memory[self._registers[1]]
 
     def _op_multiply(self):
         # multiply the values in register 0 and 1 and store in memory location pointed to by reg 2
-        self._write_to_memory(self._registers[2], self._registers[0] * self._registers[1])
+        self._memory[self._registers[2]] = self._memory[self._registers[0]] * self._memory[self._registers[1]]
 
     def _op_input(self):
         # pop a value from the input buffer in fifo format and write to the memory address in register[0]
         try:
-            self._write_to_memory(self._registers[0], self._input_buffer.pop(0))
+            self._memory[self._registers[0]]= self._input_buffer.pop(0)
         except IndexError:  # Index error occurs because we tried to pop from an empty list, need to suspend execution until we have input
             self._pc -= 2  # decrement the program counter twice so that when the system resumes it's at the input instruction
             self._running = False
 
     def _op_output(self):
         # take value in register[0] and puts it on the output buffer
-        self._output_buffer.append(self._registers[0])
+        self._output_buffer.append(self._memory[self._registers[0]])
 
     def _op_jmp_if_true(self):
         # if the value of the reg 0 is not zero, set the program counter to the value of register 1
-        if self._registers[0] != 0:
-            self._pc = self._registers[1]
+        if self._memory[self._registers[0]] != 0:
+            self._pc = self._memory[self._registers[1]]
 
     def _op_jmp_if_false(self):
         # if the value of the reg 0 is zero, set the program counter to the value of register 1
-        if self._registers[0] == 0:
-            self._pc = self._registers[1]
+        if self._memory[self._registers[0]] == 0:
+            self._pc = self._memory[self._registers[1]]
 
     def _op_less_than(self):
         result = 0
-        if self._registers[0] < self._registers[1]:
+        if self._memory[self._registers[0]] < self._memory[self._registers[1]]:
             result = 1
-        self._write_to_memory(self._registers[2], result)
+        self._memory[self._registers[2]]= result
         pass
 
     def _op_equal_to(self):
         result = 0
-        if self._registers[0] == self._registers[1]:
+        if self._memory[self._registers[0]] == self._memory[self._registers[1]]:
             result = 1
-        self._write_to_memory(self._registers[2], result)
+        self._memory[self._registers[2]]= result
         pass
 
     def _op_set_relative_offest(self):
-        self._relative_offset += self._registers[0]
+        self._relative_offset += self._memory[self._registers[0]]
 
     def _op_terminate(self):
         self._program_finished = True
