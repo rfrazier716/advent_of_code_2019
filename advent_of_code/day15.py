@@ -3,6 +3,8 @@ import numpy as np
 from collections import defaultdict
 from pathlib import Path
 from random import choice
+import json #used to save the navigation data
+import re   #used to reparse the json data
 
 
 map_visualization = {
@@ -31,6 +33,9 @@ def get_adjacent_coordinate(coord):
     # returns a set of adjacent coordinates
     return set([add_tuple(coord, value[1]) for _, value in direction.items()])
 
+def get_adjacent_spaces(coord,dict):
+    # returns the set of adjacent tiles that are not walls
+    pass
 
 def subtract_tuple(coord_1, coord_2):
     # subtracts two coordinates of N-Dimensions and returns a tuple as the result
@@ -41,6 +46,15 @@ def add_tuple(coord_1, coord_2):
     # adds two coordinates of N-Dimensions and returns a tuple as the result
     return tuple([a + b for a, b in zip(coord_1, coord_2)])
 
+def build_graph(map_dict):
+    {key:Vertex(key,get_adjacent_spaces(key)) for key,value in vertex if value!=0}
+    #want to build a graph of vectors which have coordinates and all adjacent values that are not walls
+
+class Vertex():
+    #Vertex class for building a graph
+    def __init__(self,position,adjacent):
+        self._position=position
+        self._adjacent=adjacent
 
 class RepairDroid(intcode.IntcodeComputer):
     _map_bounds = 50  # how far to span the map
@@ -65,7 +79,7 @@ class RepairDroid(intcode.IntcodeComputer):
         input = direction[move_direction][0]
         self.input(input)  # input the direction to move
         self.resume()  # run the software
-        droid_response = self.flush_output()[0]
+        droid_response = int(self.flush_output()[0]) # need to typecast to int
         new_position = add_tuple(self._position, direction[move_direction][1])
         self._map[new_position] = droid_response  # update the map with what is in that location
         self._update_visual_map(new_position,map_visualization[droid_response])
@@ -116,6 +130,7 @@ class RepairDroid(intcode.IntcodeComputer):
                 self.move(movement_dir) #move in that direction
             else:   # if we can't go any more, pop off the stack and repeat
                 self.backtrack()
+        self._canister_position=self._position
 
     def draw_map(self):
 
@@ -129,13 +144,49 @@ class RepairDroid(intcode.IntcodeComputer):
     def position(self):
         return self._position
 
+    @property
+    def map(self):
+        #return the map dictionary
+        return self._map
 
-def main():
+    @property
+    def canister_position(self):
+        return self._canister_position
+
+def generate_map():
+    #generate the map and put it into a json file
     puzzle_input_path = Path("puzzle_inputs") / "day15_input.txt"
     int_code = np.loadtxt(puzzle_input_path, delimiter=",")
-    droid = RepairDroid(int_code, verbose=True)
+    droid = RepairDroid(int_code, verbose=False)
     droid.explore()
-    droid.draw_map()
+    map_data={}
+    map_data["canister"]=droid.canister_position
+    map_data["map"]={str(key):value for key,value in droid.map.items()} #need to convert keys to string so JSON can process
+    with open("Day15_map.json", "w+") as file:
+        # save the data to a json file to speed up future tests
+        json.dump(map_data, file)
+    return droid.map
+
+def get_map_data():
+    try:
+        #try to open the map data, if it doesn't exist, generate it
+        with open("Day15_map.json",'r') as file:
+            map_data=json.load(file)
+            canister_position=tuple(map_data["canister"])   #load the canister position back
+            map_dict={tuple(re.findall("[0-9]",key)): value for key,value in map_data["map"].items()} #import the map data and convert back into a tuple
+    except FileNotFoundError:
+        # if no map data exists, create it
+        print("map data not found, generating map from droid")
+        map_dict=generate_map()
+        canister_position=droid.canister_position
+        map_dict=droid.map
+    return canister_position,map_dict
+
+def main():
+    print("Importing Map from file")
+    canister_position, map_dict = get_map_data()    # either import the map data or have the droid navigate it
+
+
 
 
 
