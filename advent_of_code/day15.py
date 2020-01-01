@@ -218,7 +218,7 @@ def breadth_first_search(graph, origin=(0, 0), target=(0, 0)):
             # if there's an index error exit the loop and return the furthest depth we've descended
             print("tried to pull from empty queue")
             return max_depth
-        print("{1} is {0} steps away".format(dist, vertex))
+        # print("{1} is {0} steps away".format(dist, vertex))
     return dist
 
 def puzzle_part_a(graph,target):
@@ -228,16 +228,16 @@ def puzzle_part_a(graph,target):
 def puzzle_part_b(graph,canister_position):
     # want to know how long to fill the entire space with O2
     # assign BFS an impossible location to reach, and the origin as the O2 canister
-    max_distance=breadth_first_search(graph,origin=canister_position,target=(10,100))
+    max_distance=breadth_first_search(graph,origin=canister_position,target=(100,100))
     print("the maximum depth of this search before exhaustion is {}".format(max_distance))
 
 def main():
     print("Importing Map from file")
     canister_position, map_dict = get_map_data()  # either import the map data or have the droid navigate it
     graph = build_graph(map_dict)  # a dictionary of coordinates and adjacent white spaces
-    print("Solving puzzle part A")
-    #puzzle_part_a(graph,canister_position)
-    print("Solving puzzle part B")
+    print("\n**puzzle part A**")
+    puzzle_part_a(graph,canister_position)
+    print("\n**puzzle part B**")
     puzzle_part_b(graph,canister_position)
 
 if __name__ == "__main__":
