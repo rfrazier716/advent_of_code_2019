@@ -29,12 +29,15 @@ reverse_direction = {
 }
 
 
-def get_adjacent_coordinate(coord):
+def get_adjacent_coordinates(coord):
     # returns a set of adjacent coordinates
     return set([add_tuple(coord, value[1]) for _, value in direction.items()])
 
 def get_adjacent_spaces(coord,dict):
-    # returns the set of adjacent tiles that are not walls
+    
+    adjacent_coordinates=get_adjacent_coordinates(coord)
+
+    adjacent_spaces=
     pass
 
 def subtract_tuple(coord_1, coord_2):
@@ -47,7 +50,8 @@ def add_tuple(coord_1, coord_2):
     return tuple([a + b for a, b in zip(coord_1, coord_2)])
 
 def build_graph(map_dict):
-    {key:Vertex(key,get_adjacent_spaces(key)) for key,value in vertex if value!=0}
+    graph={key:Vertex(key,get_adjacent_spaces(key,map_dict)) for key,value in map_dict.items()}
+
     #want to build a graph of vectors which have coordinates and all adjacent values that are not walls
 
 class Vertex():
@@ -173,7 +177,9 @@ def get_map_data():
         with open("Day15_map.json",'r') as file:
             map_data=json.load(file)
             canister_position=tuple(map_data["canister"])   #load the canister position back
-            map_dict={tuple(re.findall("[0-9]",key)): value for key,value in map_data["map"].items()} #import the map data and convert back into a tuple
+            map_dict={
+                tuple([int(num) for num in re.findall("[0-9]+",key)]): value
+                for key,value in map_data["map"].items()} #import the map data and convert back into a tuple
     except FileNotFoundError:
         # if no map data exists, create it
         print("map data not found, generating map from droid")
@@ -185,6 +191,7 @@ def get_map_data():
 def main():
     print("Importing Map from file")
     canister_position, map_dict = get_map_data()    # either import the map data or have the droid navigate it
+    build_graph(map_dict)
 
 
 
