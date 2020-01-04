@@ -8,14 +8,16 @@ def get_base_pattern(phase_step):
 def flawed_ft(ft_input=np.array([])):
     # generator to return the fft phase
     output = np.full(ft_input.shape, 0)  # output array that will be filled
-    pattern_array=[
+    ft_matrix=np.array([
         np.tile(get_base_pattern(step), ceil(ft_input.shape[0] / get_base_pattern(step).shape[0]))[:ft_input.shape[0]]
         for step in range(ft_input.shape[0])
-    ]
+    ])
     while True:
-        output = np.array([
-            np.mod(abs(np.sum(np.multiply(ft_input, pattern_array[step]))), 10)
-            for step in range(ft_input.shape[0])]) # perform the FFT phase calculation by multiplying and summing
+        # every time the generator is called return a new signal output by
+        output=np.mod(abs(np.matmul(ft_matrix,ft_input.T)),10) # multiply the input by the ft_matrix operator and keep only the ones digit
+        #output = np.array([
+        #    np.mod(abs(np.sum(np.multiply(ft_input, pattern_array[step]))), 10)
+        #    for step in range(ft_input.shape[0])]) # perform the FFT phase calculation by multiplying and summing
         yield output
         ft_input = output
 
