@@ -11,7 +11,7 @@ def flawed_ft(input=np.array([])):
             base_pattern = np.roll(np.repeat([0, 1, 0, -1], step + 1), -1)
             pattern_array = np.tile(base_pattern, ceil(input.shape[0] / base_pattern.shape[0]))[
                             :len(input)]  # build the appropriate pattern array
-            output[step] = int(str(np.sum(np.multiply(input, pattern_array)))[-1])  # keep only the ones digit
+            output[step] = np.mod(np.sum(np.multiply(input, pattern_array)),10)  # keep only the ones digit
         yield output
         input = output
 
@@ -20,7 +20,7 @@ def fast_fft(fft_input=np.array([])):
     # generator for the fft which is valid only when you care about the latter half of the data
     while True:
         # the fft is the accumulation of the input reversed
-        output = np.flip(np.array([int(str(j)[-1]) for j in np.add.accumulate(np.flip(fft_input))]))
+        output = np.flip(np.mod(np.cumsum(np.flip(fft_input)),10))
         yield output
         fft_input = output
 
